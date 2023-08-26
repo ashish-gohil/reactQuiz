@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Questions from "./Questions";
+import Timer from "./Timer";
 
 function Quiz({ questions, onFinish, totalPoints, totalQuestions }) {
   // saperqate useReducer for bellow
   const [curQuestionNo, setCurQuestionNo] = useState(1);
   const [curPoints, setCurPoints] = useState(0);
-
   const [isOpSelected, setIsOpSelected] = useState(null);
+  const finishQuiz = () => {
+    onFinish(curPoints);
+  };
+
   return (
     <>
       <header className="progress">
@@ -29,13 +33,13 @@ function Quiz({ questions, onFinish, totalPoints, totalQuestions }) {
         }}
       />
       <footer>
-        <div className="timer">01:01</div>
+        <Timer onFinish={finishQuiz} />
         {isOpSelected !== null && (
           <button
             className="btn btn-ui"
             onClick={() => {
               if (curQuestionNo === questions.length) {
-                onFinish(curPoints);
+                finishQuiz();
                 return;
               }
               setIsOpSelected(null);

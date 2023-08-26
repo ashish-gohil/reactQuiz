@@ -11,14 +11,14 @@ function Questions({ question, onOpButtonClick, isOpSelected }) {
           let classname;
           if (isOpSelected === null) {
             classname = "btn btn-option";
-          } else if (isOpSelected === idx) {
+          } else if (idx === isOpSelected) {
             classname =
               correctOption === isOpSelected
                 ? "btn btn-option answer correct"
                 : "btn btn-option answer wrong";
           } else {
             classname =
-              correctOption === idx
+              idx === correctOption
                 ? "btn btn-option correct"
                 : "btn btn-option wrong";
           }

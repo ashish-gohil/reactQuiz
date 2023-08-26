@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import Header from "./Header";
 import Home from "./Home";
 import Loader from "./Loader";
@@ -12,30 +12,45 @@ import Error from "./Error";
 // json-server --watch .\src\questions.json --port 8000
 
 function App() {
-  // useReducer for bellow
-  const [isError, setIsError] = useState(false);
-  const [isQuestionsLoaded, setIsQuestionsLoaded] = useState(false);
-  const [isStarted, setIsStarted] = useState(false);
-  const [isOver, setIsOver] = useState(false);
-  const [questions, setQuestions] = useState([]);
-  const [score, setScore] = useState(0);
+  const initialState = {
+    questions: [],
+    status: "loading", // loading, error, ready, active, finished
+    score: 0,
+  };
+  function reducer(state, action) {
+    switch (action.status) {
+      case "error":
+        return { ...state, status: "error" };
+      case "ready":
+        return { ...state, status: "ready", questions: action.payload };
+      case "active":
+        return { ...state, status: "active" };
+      case "finished":
+        return { ...state, status: "finished", score: action.payload };
+      case "reset":
+        return { ...state, status: "ready", score: 0 };
+      default:
+        return state;
+    }
+  }
+  const [state, dispatch] = useReducer(reducer, initialState);
 
   // totalQuestions, totalPoints;
-  const totalQuestions = questions.length;
-  const totalPoints = questions.reduce((prev, cur) => cur["points"] + prev, 0);
+  const totalQuestions = state.questions.length;
+  const totalPoints = state.questions.reduce(
+    (prev, cur) => cur["points"] + prev,
+    0
+  );
 
   useEffect(() => {
     async function loadQuestions() {
       try {
         const res = await fetch("http://localhost:8000/questions");
-        console.log(res);
         if (!res.ok) throw new Error("Something Went wrong!");
         const data = await res.json();
-        console.log(data);
-        setIsQuestionsLoaded(true);
-        setQuestions(data);
+        dispatch({ status: "ready", payload: data });
       } catch (err) {
-        setIsError(true);
+        dispatch({ status: "error" });
       }
     }
     loadQuestions();
@@ -44,32 +59,30 @@ function App() {
     <div className="app">
       <Header />
       <Main>
-        {!isQuestionsLoaded && !isError && <Loader />}
-        {isError && <Error />}
-        {isQuestionsLoaded && !isStarted && (
+        {state.status === "loading" && <Loader />}
+        {state.status === "error" && <Error />}
+        {state.status === "ready" && (
           <Home
-            noOfQuestions={questions.length}
-            onStart={() => setIsStarted(true)}
+            noOfQuestions={state.questions.length}
+            onStart={() => dispatch({ status: "active" })}
           />
         )}
-        {isStarted && !isOver && (
+        {state.status === "active" && (
           <Quiz
             totalPoints={totalPoints}
             totalQuestions={totalQuestions}
-            questions={questions}
+            questions={state.questions}
             onFinish={(score) => {
-              setScore(score);
-              setIsOver(true);
+              dispatch({ status: "finished", payload: score });
             }}
           />
         )}
-        {isOver && (
+        {state.status === "finished" && (
           <Result
-            score={score}
+            score={state.score}
             totalScore={totalPoints}
             onReset={() => {
-              setIsOver(false);
-              setIsStarted(false);
+              dispatch({ status: "reset" });
             }}
           />
         )}
